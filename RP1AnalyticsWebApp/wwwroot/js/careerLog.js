@@ -3,6 +3,8 @@
     const vm = app.mount('#contracts');
 
     let chart = null;
+    let tooltipDiv = null;
+    let monthIdx = -1;
 
     window.addEventListener('resize', () => {
         if (!chart) return;
@@ -101,7 +103,7 @@
             chart: {
                 type: "line",
                 height: calculateChartHeight(),
-                width: '100%',
+                width: '100%'
             },
             markers: {
                 size: 1,
@@ -267,6 +269,37 @@
         chart.hideSeries('Funds Earned');
         chart.hideSeries('Advance Funds');
         chart.hideSeries('Reward Funds');
+
+        appendCustomTooltipDiv();
+    }
+
+    function appendCustomTooltipDiv() {
+        tooltipDiv = document.createElement('div');
+        tooltipDiv.className = 'apexcharts-tooltip-series-group apexcharts-active';
+        tooltipDiv.style.cssText = 'order: 999;display: flex;';
+
+        const tooltipEl = chart.w.globals.tooltip.getElTooltip();
+        if (!tooltipEl.contains(tooltipDiv)) {
+            tooltipEl.appendChild(tooltipDiv);
+        }
+
+        const oldFn = chart.w.globals.tooltip.tooltipLabels.drawSeriesTexts;
+        chart.w.globals.tooltip.tooltipLabels.drawSeriesTexts = ({ shared = true, ttItems, i = 0, j = null, y1, y2, e }) => {
+            console.log('hijacked! month idx: ' + j + '; series idx: ' + i);
+
+            if (monthIdx !== j) {
+                monthIdx = j;
+
+                const sDate = chart.opts.xaxis.categories[monthIdx];
+                const date = moment.utc(sDate);
+
+                const a = vm.contracts.filter(c => moment.utc(c.date) < date && moment.utc(c.date).add(1, 'months') > date)
+                    .reduce((acc, c) => acc + (acc === '' ? '' : '; ') + c.contractDisplayName, '');
+                tooltipDiv.innerHTML = 'Completed: ' + a;
+            }
+
+            oldFn.apply(chart.w.globals.tooltip.tooltipLabels, [{ shared, ttItems, i, j, y1, y2, e }]);
+        };
     }
 
     function calculateChartHeight() {

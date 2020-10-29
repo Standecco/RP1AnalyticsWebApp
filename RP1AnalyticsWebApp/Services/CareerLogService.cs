@@ -77,6 +77,7 @@ namespace RP1AnalyticsWebApp.Services
             {
                 ContractInternalName = kvp.Key,
                 ContractDisplayName = kvp.Value,
+                Type = ContractEventType.Complete,
                 Date = c.contractEventEntries.FirstOrDefault(e => e.type == ContractEventType.Complete &&
                                                                   string.Equals(e.internalName, kvp.Key, StringComparison.OrdinalIgnoreCase))?.date
             }).Where(ce => ce.Date.HasValue).OrderBy(ce => ce.Date).ToList();
